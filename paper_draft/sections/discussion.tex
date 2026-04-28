@@ -1,0 +1,17 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\para{What did we learn about minimum viable population?}
+The main negative result is also the clearest one: this experiment does not support a simple rule such as ``below four agents the ecosystem collapses.'' Population size alone is a weak predictor in our setup. A single-agent accumulation condition finishes best, while several larger populations finish worse. That does not mean population never matters. It means nominal count is not enough without a stronger account of what information each producer contributes and how that information is inherited.
+
+\para{Why did role diversity fail to help?}
+Our individuality assay shows that prompt-level role diversity creates measurable behavioral separation. The issue is that this separation may be mostly stylistic. If distinct agents vary tone, framing, or discourse habits but draw from the same underlying knowledge and the same recursive inheritance channel, they can still transmit the same distortions. The positive correlation between individuality ratio and collapse severity is therefore plausible: more visible stylistic variation can coexist with weaker preservation of factual grounding. In this sense, our results distinguish behavioral distinctness from epistemic diversity.
+
+\para{What does the generation-1 shock imply?}
+The strongest regularity in the paper is the immediate drop after the first synthetic handoff. This suggests that the first transition away from direct human anchoring is a critical point. Later generations do not show universal runaway collapse; instead, they partially recover. A practical implication is that recursive systems may fail first through an inheritance shock rather than a smooth long-run drift. Monitoring only late-stage degradation would miss that transition.
+
+\para{Limitations.}
+This paper studies a recursive inheritance proxy, not full descendant-model retraining. The experiment is also deliberately small: each condition-generation cell uses 12 corpus prompts and 12 \textsc{TruthfulQA} questions, and truthfulness is measured through embedding-based similarity rather than human annotation. In addition, the role-diverse conditions change prompt framing but do not create independent knowledge sources, tools, or model families. Finally, the first full generation run predates a determinism patch that sorts inherited exemplars. These limits mean the paper should be read as evidence about recursive cultural inheritance under bounded conditions, not as a definitive statement about future pretraining pipelines.
+
+\para{Broader implications.}
+The broader message is governance-oriented. If synthetic text is entering shared corpora, then counting the number of contributing agents is an incomplete safety check. What matters more is whether the inheritance mechanism preserves human anchors, external grounding, or genuinely different evidence sources. Systems that optimize for visible surface diversity alone may look healthy while still becoming more concentrated over time.

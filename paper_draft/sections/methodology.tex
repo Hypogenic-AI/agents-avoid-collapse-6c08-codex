@@ -1,0 +1,36 @@
+\section{Methodology}
+\label{sec:methodology}
+
+\para{Research question and design.}
+We ask whether a recursive LLM ecosystem has a minimum viable population of sufficiently distinct producers below which it collapses, and whether that threshold survives when a small human anchor is retained. The original plan was to fine-tune local descendant models across generations. We replaced that with a recursive inheritance proxy because the local \texttt{torch}/\texttt{transformers} stack was not stable enough for a reliable one-session run. In our proxy, generation-0 agents are anchored on human exemplars, and later generations inherit exemplars from prior synthetic outputs. This keeps real LLM behavior in the loop while weakening the claim from weight-space retraining to cultural inheritance.
+
+\para{Models, data, and generation protocol.}
+All text generation uses \textsc{gpt-4.1-mini} with temperature 0.9 and a maximum of 170 output tokens. We measure embedding distances with \textsc{text-embedding-3-small}. Human prompts come from \textsc{OASST1}, the persistent human anchor comes from \textsc{WikiText-103 Raw}, and held-out evaluation uses \textsc{TruthfulQA Generation}. Each condition runs for four generations ($g \in \{0,1,2,3\}$). In every generation, the system produces 12 corpus samples from \textsc{OASST1} prompts and 12 \textsc{TruthfulQA} answers, for 24 outputs per condition-generation cell and 576 recursive outputs overall.
+
+\para{Experimental conditions.}
+We evaluate six conditions:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+    \item \textsc{P1-Homogeneous-Replacement}
+    \item \textsc{P2-Homogeneous-Replacement}
+    \item \textsc{P4-Homogeneous-Replacement}
+    \item \textsc{P4-Role-Diverse-Replacement}
+    \item \textsc{P1-Homogeneous-Accumulation}
+    \item \textsc{P4-Role-Diverse-Accumulation}
+\end{itemize}
+Replacement means later generations inherit only synthetic exemplars. Accumulation means they retain a small human anchor alongside synthetic inheritance. The homogeneous conditions use same-role agents that differ only through sampling noise, while the role-diverse conditions vary prompt role and framing.
+
+\para{What counts as an individual?}
+Our population definition is behavioral rather than architectural. Let $d_{\mathrm{within}}$ be the mean distance between repeated outputs from the same agent on the same prompt set, and let $d_{\mathrm{between}}$ be the mean distance between outputs from different agents on that set. We define the individuality ratio as
+\[
+\text{IR} = \frac{d_{\mathrm{between}}}{d_{\mathrm{within}}}.
+\]
+An agent population counts as behaviorally distinct when $\text{IR} > 1$, meaning between-agent differences exceed within-agent stochastic variance. This criterion follows the logic that separate API calls should not count as separate individuals unless they are distinguishable beyond sampling noise.
+
+\para{Evaluation metrics.}
+We measure collapse with three families of metrics. First, we track lexical and distributional diversity using distinct-2, distinct-3, token entropy, self-BLEU, and mean embedding similarity. Second, we estimate truthfulness by comparing answer embeddings against correct and incorrect \textsc{TruthfulQA} references and converting those comparisons into a binary truthfulness proxy. Third, we compute a composite collapse score that combines relative changes in diversity, truthfulness, and embedding concentration with respect to generation 0. Lower collapse scores are better.
+
+\para{Baselines and analysis.}
+The most pessimistic tested baseline is \textsc{P1-Homogeneous-Replacement}, which combines the smallest nominal population with full synthetic replacement. The strongest human-anchor baseline is \textsc{P1-Homogeneous-Accumulation}. The role-diverse $P{=}4$ conditions test whether behavioral distinctness changes the recursive trajectory. For statistical analysis, we report the final-generation Spearman correlation between the individuality proxy and collapse severity across conditions. Because this experiment is deliberately bounded to 12 corpus prompts and 12 \textsc{TruthfulQA} questions per cell, we treat the results as exploratory and focus on effect direction, rank ordering, and trajectory shape rather than precise interval estimates.
+
+\para{Implementation details.}
+The experiment runs in a Python 3.12.8 virtual environment using the OpenAI Python SDK 2.32.0. The workspace includes four NVIDIA RTX A6000 GPUs, but the final API-based inheritance pipeline does not use them. One end-to-end caveat is that the first full generation run predates a determinism patch that sorted inherited exemplars. The saved raw outputs are stable and the analysis reruns identically, but a bitwise-identical re-execution should use the patched script.

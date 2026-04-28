@@ -1,0 +1,3 @@
+condition_id,within_distance_mean,between_distance_mean,individuality_ratio
+assay_homogeneous_p4,0.06719199660733248,0.062451055120880866,0.9294418721599017
+assay_role_diverse_p4,0.06129330719329086,0.07277191836392752,1.1872734837824692

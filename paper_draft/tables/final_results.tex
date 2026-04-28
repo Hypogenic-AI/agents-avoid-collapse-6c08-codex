@@ -1,0 +1,19 @@
+\begin{table*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Condition & Final collapse score $\downarrow$ & Final truth rate $\uparrow$ & Final distinct-2 $\uparrow$ & Final token entropy $\uparrow$ \\
+\midrule
+\textsc{P1-Homogeneous-Accumulation} & \textbf{-0.0072} & 0.7500 & 0.9095 & 8.7962 \\
+\textsc{P4-Homogeneous-Replacement} & 0.0190 & \textbf{0.8333} & 0.9041 & 8.8324 \\
+\textsc{P1-Homogeneous-Replacement} & 0.2003 & 0.6667 & \textbf{0.9394} & \textbf{8.9622} \\
+\textsc{P2-Homogeneous-Replacement} & 0.2056 & 0.7500 & 0.9352 & 8.8352 \\
+\textsc{P4-Role-Diverse-Replacement} & 0.2238 & 0.6667 & 0.9297 & 8.8834 \\
+\textsc{P4-Role-Diverse-Accumulation} & 0.3147 & 0.6667 & 0.9193 & 8.8540 \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Final-generation comparison across all recursive ecosystem conditions. Lower collapse score is better. Best values in each column are shown in \textbf{bold}. The best overall condition is the single-agent accumulation regime, while the worst is the role-diverse accumulation regime.}
+\label{tab:final_results}
+\end{table*}

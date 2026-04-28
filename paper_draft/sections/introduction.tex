@@ -1,0 +1,20 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Recursive synthetic text is no longer a speculative concern. Large language models already write summaries, code, documentation, and conversational data that later systems may absorb. When this happens repeatedly, an information ecosystem can degrade before standard task metrics make the failure obvious. Prior work on model collapse shows that low-probability modes disappear early under recursive self-training, even when headline quality appears stable \cite{shumailov2023curse,briesch2023large}. Our main question is simple: how many sufficiently distinct agents are needed to keep a recursive LLM ecosystem from collapsing?
+
+This question matters because population count is easy to name but hard to interpret. Ten chat sessions of the same model do not necessarily give ten independent producers. On the other hand, small differences in role, memory, or data access may create meaningfully different behaviors. Existing collapse work largely studies a single model loop or compares replacement against accumulation in a single lineage \cite{alemohammad2023self,gillman2024selfcorrecting,gerstgrasser2024model}. It does not tell us whether there is a population-level analogue of minimum viable population, nor does it give a practical definition of what counts as a distinct individual in an LLM ecosystem.
+
+We address that gap with a bounded recursive inheritance experiment. Instead of retraining descendant weights, which was unstable in the available local stack, we let later-generation agents inherit exemplars from earlier synthetic outputs while varying three factors: nominal population size, prompt-level distinctness, and whether a small human anchor persists across generations. We also define individuality behaviorally: an agent counts as distinct when its between-agent output distance exceeds its own within-agent stochastic variance on the same prompts. This lets us separate nominal population size from effective population size.
+
+\Figref{fig:main-trajectories} previews the central result. We do not observe a clean threshold where larger populations reliably prevent collapse. Instead, every condition suffers a strong generation-1 truthfulness shock, then partially recovers over the next two generations. The best final condition is \textsc{P1-Homogeneous-Accumulation} with a collapse score of $-0.0072$, while the worst is \textsc{P4-Role-Diverse-Accumulation} with a collapse score of $0.3147$. Prompt-level role diversity makes agents more distinguishable, raising the individuality ratio from 0.9294 to 1.1873, but it does not improve recursive robustness.
+
+Our contributions are:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]
+    \item We propose a behavioral definition of LLM individuality based on between-agent distance relative to within-agent stochastic variance.
+    \item We conduct a six-condition recursive inheritance study that varies population size, prompt-level distinctness, and replacement versus accumulation across four generations.
+    \item We show that the dominant failure mode in this setting is a generation-1 truthfulness shock with partial recovery, rather than smooth monotonic collapse.
+    \item We show that prompt-level role diversity is measurable but not protective: more behaviorally distinct agents can still yield worse final collapse scores.
+\end{itemize}
+
+The rest of the paper is organized as follows. \Secref{sec:related_work} situates our study within recursive training, anti-collapse interventions, and population diversity work. \Secref{sec:methodology} describes the recursive inheritance proxy, individuality assay, and evaluation protocol. \Secref{sec:results} presents the main findings, and \Secref{sec:discussion} discusses their interpretation, limitations, and implications.

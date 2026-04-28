@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "stages": {
+    "resource_finder": {
+      "success": true,
+      "completion_marker": "/workspaces/agents-avoid-collapse-6c08-codex/.resource_finder_complete",
+      "outputs": {
+        "literature_review": "/workspaces/agents-avoid-collapse-6c08-codex/literature_review.md",
+        "resources_catalog": "/workspaces/agents-avoid-collapse-6c08-codex/resources.md",
+        "papers_dir": "/workspaces/agents-avoid-collapse-6c08-codex/papers",
+        "datasets_dir": "/workspaces/agents-avoid-collapse-6c08-codex/datasets",
+        "code_dir": "/workspaces/agents-avoid-collapse-6c08-codex/code"
+      },
+      "log_file": "/workspaces/agents-avoid-collapse-6c08-codex/logs/resource_finder_codex.log",
+      "transcript_file": "/workspaces/agents-avoid-collapse-6c08-codex/logs/resource_finder_codex_transcript.jsonl",
+      "elapsed_time": 575.9259014129639
+    },
+    "experiment_runner": {
+      "success": true,
+      "return_code": 0,
+      "elapsed_time": 1259.5193502902985,
+      "log_file": "/workspaces/agents-avoid-collapse-6c08-codex/logs/execution_codex.log",
+      "transcript_file": "/workspaces/agents-avoid-collapse-6c08-codex/logs/execution_codex_transcript.jsonl"
+    }
+  },
+  "work_dir": "/workspaces/agents-avoid-collapse-6c08-codex"
+}

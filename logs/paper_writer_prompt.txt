@@ -1,0 +1,770 @@
+You are an academic paper writer. Generate a complete NEURIPS style paper
+based on the experiment results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at .codex/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW EXAMPLES: Browse paper_examples/ for formatting and language patterns:
+   - Look at sections/1.introduction.tex for language style
+   - Look at tables/*.tex for table formatting
+   - Look at commands/*.tex for macro usage
+4. VERIFY COMMAND TEMPLATES: Command templates (math.tex, general.tex, macros.tex) are pre-copied to paper_draft/commands/
+
+CRITICAL: Reference example papers for FORMATTING and LANGUAGE STYLE only.
+Do NOT copy content, phrasing, or narrative structure from the example papers.
+The examples are in a different research domain - focus only on presentation style.
+
+════════════════════════════════════════════════════════════════════════════════
+                            EXPERIMENT REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# REPORT
+
+## 1. Executive Summary
+This project tested whether a recursive LLM information ecosystem has a minimum viable population of sufficiently distinct agents below which it collapses. In this bounded proxy experiment, I did not find a clean minimum viable population threshold. Instead, the dominant pattern was an immediate generation-1 truthfulness shock across almost all conditions, followed by partial recovery.
+
+The most important result is that prompt-level role diversity was detectable but not protective. The role-diverse conditions had a higher individuality ratio than the homogeneous conditions, yet they also had worse final composite collapse scores in this setup. The best final condition was `p1_homogeneous_accumulation`, and the worst was `p4_role_diverse_accumulation`.
+
+Practically, this suggests that &#34;more agents&#34; is not enough, and &#34;more different prompts&#34; is not automatically enough either. If an ecosystem is to avoid collapse, the important variable may be the quality of the inheritance mechanism and preservation of human anchors, not only the nominal population count.
+
+## 2. Research Question &amp; Motivation
+The user asked whether an LLM information ecosystem has an analogue of biological minimum viable population: a minimum number of sufficiently distinct producers needed to prevent collapse once LLM-written data becomes training data for later generations. This matters because synthetic text is already entering public corpora, code bases, and dialogue systems, and diversity can decay before standard quality metrics visibly fail.
+
+The literature review in [literature_review.md](/workspaces/agents-avoid-collapse-6c08-codex/literature_review.md) established three relevant facts:
+- Recursive self-training often destroys low-probability modes before headline task accuracy fails.
+- Accumulation or correction can mitigate collapse in some settings.
+- Prior work mostly studies a single model loop, not a population of interacting or partially distinct producers.
+
+The missing piece was population-level evidence. This project therefore tested both nominal population size and operational individuality.
+
+## 3. Experimental Setup
+
+### Models and APIs
+- Generation model: `gpt-4.1-mini`
+- Embedding model: `text-embedding-3-small`
+- Temperature: `0.9`
+- Max output tokens: `170`
+- Client: OpenAI Python SDK `2.32.0`
+
+### Data
+- Human prompt source: `datasets/oasst1`
+- Human inheritance anchor: `datasets/wikitext_103_raw`
+- Held-out evaluation: `datasets/truthful_qa_generation`
+
+### Conditions
+Six recursive ecosystem conditions were tested for 4 generations each:
+- `p1_homogeneous_replacement`
+- `p2_homogeneous_replacement`
+- `p4_homogeneous_replacement`
+- `p4_role_diverse_replacement`
+- `p1_homogeneous_accumulation`
+- `p4_role_diverse_accumulation`
+
+Each generation produced:
+- 12 corpus samples from OASST1 prompts
+- 12 TruthfulQA answers
+
+Total recursive outputs: `576` saved in [results/recursive_outputs.json](/workspaces/agents-avoid-collapse-6c08-codex/results/recursive_outputs.json)
+
+### Individuality Definition
+I defined an &#34;individual&#34; behaviorally rather than architecturally. An agent counts as distinct when its between-agent output distance exceeds its within-agent stochastic variance on the same prompt set.
+
+Measured individuality:
+
+| Condition | Within distance | Between distance | Individuality ratio |
+|---|---:|---:|---:|
+| homogeneous P=4 assay | 0.0672 | 0.0625 | 0.9294 |
+| role-diverse P=4 assay | 0.0613 | 0.0728 | 1.1873 |
+
+Interpretation:
+- Homogeneous prompt variants were not distinct enough to count as separate individuals by this criterion.
+- Role-diverse prompt variants were distinct enough to count as separate individuals.
+
+### Metrics
+- Diversity: `distinct_2`, `distinct_3`, token entropy, self-BLEU, embedding similarity
+- Truthfulness proxy: answer embedding similarity to TruthfulQA correct vs incorrect references
+- Composite collapse score: combined change in diversity, truthfulness, and embedding concentration relative to generation 0
+
+### Important Deviation From Original Plan
+The original plan proposed local descendant model training on synthetic corpora. I did not use that as the final experiment because the local `torch/transformers` stack was unstable enough to threaten the one-session requirement. Instead, I used a recursive inheritance proxy:
+- generation 0 agents are anchored on human exemplars
+- later-generation agents inherit exemplars from prior synthetic outputs
+- `replacement` uses synthetic inheritance only
+- `accumulation` preserves a small human anchor
+
+This preserves real LLM behavior end to end, but it is weaker than full weight-space retraining. The conclusions should therefore be read as evidence about recursive cultural inheritance, not definitive proof about future pretraining dynamics.
+
+### Hardware and Environment
+- Workspace venv: `.venv`
+- Python: `3.12.8`
+- GPU detected: `4 x NVIDIA RTX A6000` with ~49 GB each
+- Final experiment path: API-based, so GPU was available but not needed
+
+## 4. Results
+
+### Final Generation Comparison
+
+| Condition | Final collapse score | Final truth rate | Final distinct-2 | Final token entropy |
+|---|---:|---:|---:|---:|
+| `p1_homogeneous_accumulation` | -0.0072 | 0.7500 | 0.9095 | 8.7962 |
+| `p4_homogeneous_replacement` | 0.0190 | 0.8333 | 0.9041 | 8.8324 |
+| `p1_homogeneous_replacement` | 0.2003 | 0.6667 | 0.9394 | 8.9622 |
+| `p2_homogeneous_replacement` | 0.2056 | 0.7500 | 0.9352 | 8.8352 |
+| `p4_role_diverse_replacement` | 0.2238 | 0.6667 | 0.9297 | 8.8834 |
+| `p4_role_diverse_accumulation` | 0.3147 | 0.6667 | 0.9193 | 8.8540 |
+
+Lower collapse score is better.
+
+### Aggregate Patterns
+- By data regime at final generation:
+  - accumulation mean collapse score: `0.1538`
+  - replacement mean collapse score: `0.1622`
+- By distinctness at final generation:
+  - homogeneous mean collapse score: `0.1044`
+  - role-diverse mean collapse score: `0.2693`
+- By population size at final generation:
+  - P=1 mean collapse score: `0.0966`
+  - P=2 mean collapse score: `0.2056`
+  - P=4 mean collapse score: `0.1858`
+
+### Temporal Pattern
+The most stable pattern was not gradual monotonic collapse. Instead:
+- generation 0 truthfulness started high, from `0.67` to `0.92` depending on condition
+- generation 1 dropped sharply to `0.42` to `0.50` in every condition
+- generations 2 and 3 partially recovered to `0.67` to `0.83`
+
+This indicates a strong inheritance shock after the first synthetic handoff, but not universal runaway degeneration over the next two generations.
+
+### Diversity and Concentration
+Embedding similarity rose by generation 3 in every condition, which is consistent with some concentration of outputs over time. For example:
+- `p1_homogeneous_accumulation`: `0.1579 -&gt; 0.2018`
+- `p4_homogeneous_replacement`: `0.1580 -&gt; 0.2154`
+- `p4_role_diverse_replacement`: `0.1681 -&gt; 0.2179`
+
+Figures:
+- [figures/distinct_2.png](/workspaces/agents-avoid-collapse-6c08-codex/figures/distinct_2.png)
+- [figures/token_entropy.png](/workspaces/agents-avoid-collapse-6c08-codex/figures/token_entropy.png)
+- [figures/truth_binary_mean.png](/workspaces/agents-avoid-collapse-6c08-codex/figures/truth_binary_mean.png)
+- [figures/collapse_score.png](/workspaces/agents-avoid-collapse-6c08-codex/figures/collapse_score.png)
+
+## 5. Analysis &amp; Discussion
+
+### Answer to the Main Question
+Within this proxy setup, there is no evidence of a simple minimum viable population threshold such as &#34;below 4 agents the ecosystem collapses.&#34; Population size alone did not order the outcomes cleanly. The best final condition was a single-agent accumulation regime, while several larger populations performed worse.
+
+### What Counted as an Individual?
+The individuality assay gives a concrete answer:
+- same-model, same-role agents with only stochastic variation did not separate from within-agent noise
+- same-model agents with different roles did separate from within-agent noise
+
+So, in this experiment, &#34;different enough&#34; meant behavioral separation above stochastic variance, not merely being separate API calls or chat sessions.
+
+### Does Collapse Always Happen?
+Not in this setup. All conditions showed a first-generation shock, and all conditions showed increased embedding concentration by the end, but none showed irreversible monotonic collapse across all metrics. The best accumulation condition ended slightly better than its own generation-0 composite baseline.
+
+### Did More Individuality Help?
+Surprisingly, no. The final-generation Spearman correlation between individuality proxy and collapse score was:
+- `rho = 0.8281`
+- `p = 0.0418`
+
+Because higher collapse score is worse, the observed association here runs in the wrong direction for the original hypothesis. In plain terms: prompt-role diversity made agents more distinguishable, but did not make the ecosystem more robust. This suggests that superficial stylistic diversity is not the kind of diversity that protects against recursive degradation.
+
+### Interpretation
+The experiment points toward a narrower conclusion than the original hypothesis:
+- nominal population size is a weak predictor
+- prompt-level behavioral distinctness is measurable
+- but the protective value of distinctness depends on what kind of information is preserved
+
+In other words, a viable ecosystem likely needs epistemic diversity or external grounding, not just many stylistically different speakers.
+
+## 6. Limitations
+- This is not full retraining of descendant model weights. It is a recursive inheritance proxy using real LLMs plus inherited exemplars.
+- Sample sizes are deliberately bounded for one-session feasibility: 12 corpus prompts and 12 TruthfulQA questions per generation-condition cell.
+- The truthfulness metric is embedding-based, not human-annotated.
+- The role-diverse condition changes style and framing, but may not create genuinely independent knowledge sources.
+- The first full generation run was saved before a determinism patch that sorted inherited exemplars. The saved raw outputs are stable and the analysis reran identically, but a fully bitwise-reproducible end-to-end rerun should use the patched script.
+
+## 7. Conclusions &amp; Next Steps
+The clearest answer is: this experiment does not support a universal minimum viable population for LLM ecosystems. Collapse was not inevitable, and larger populations were not reliably safer. What mattered more was the inheritance mechanism, and prompt-level diversity by itself was not enough.
+
+The strongest operational answer to &#34;what counts as an individual?&#34; is behavioral distinctness above within-agent stochastic variance. That is a defensible population definition, but it was not sufficient to protect the recursive ecosystem here.
+
+Recommended follow-up work:
+- Replace the inheritance proxy with actual small-model fine-tuning across generations.
+- Introduce external retrieval or human-refresh controls to test grounded diversity rather than prompt-style diversity.
+- Expand the population design to include model-family diversity, not just role diversity.
+- Increase the benchmark set beyond TruthfulQA and use human or LLM-judge validation for failure cases.
+
+## References
+- Shumailov et al. 2023. *The Curse of Recursion: Training on Generated Data Makes Models Forget*. arXiv:2305.17493.
+- Alemohammad et al. 2023. *Self-Consuming Generative Models Go MAD*. arXiv:2307.01850.
+- Briesch et al. 2023. *Large Language Models Suffer From Their Own Output*. arXiv:2311.16822.
+- Gillman et al. 2024. *Self-Correcting Self-Consuming Loops for Generative Model Training*. arXiv:2402.07087.
+- Gerstgrasser et al. 2024. *Is Model Collapse Inevitable?* arXiv:2404.01413.
+- McKee et al. 2021. *Quantifying the Effects of Environment and Population Diversity in Multi-Agent Reinforcement Learning*. arXiv:2102.08370.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Plan: How Many Agents to Avoid Collapse?
+
+## Motivation &amp; Novelty Assessment
+
+### Why This Research Matters
+Recursive synthetic-data loops are becoming a practical governance problem: models already generate training data, summaries, code, and conversations that later systems may absorb. If diversity decays faster than task performance, an LLM ecosystem can appear healthy while silently losing coverage, robustness, and truthfulness.
+
+### Gap in Existing Work
+The local literature shows strong evidence for model collapse under recursive training, and strong counterevidence that accumulation or correction can delay or avoid it. What is missing is a population-level view: prior work studies a single retrained model or a single synthetic-data loop, not an ecosystem with multiple partially distinct producers competing to define the next generation&#39;s training distribution.
+
+### Our Novel Contribution
+This project operationalizes three missing pieces together:
+1. An empirical definition of when two LLM agents count as distinct individuals.
+2. A population-size sweep over recursive synthetic-data loops.
+3. A test of whether any apparent minimum viable population is intrinsic, or instead depends mainly on data-governance regime such as replacement versus accumulation.
+
+### Experiment Justification
+- Experiment 1: quantify individuality. Needed because &#34;population size&#34; is meaningless unless we can distinguish true individuals from prompt variants that differ only by sampling noise.
+- Experiment 2: recursive replacement loops. Needed to test whether small populations collapse faster than larger populations when synthetic data fully replaces human data.
+- Experiment 3: recursive accumulation loops. Needed to test whether collapse is inevitable, or whether a fixed trickle of human data removes the apparent minimum viable population threshold.
+
+## Research Question
+Is there a minimum viable population of sufficiently distinct LLM agents below which a recursive information ecosystem collapses, and does that threshold persist once human data accumulation is allowed?
+
+## Background and Motivation
+The literature review identifies two robust findings. First, recursive synthetic training tends to erase low-probability modes before headline accuracy fails. Second, anti-collapse interventions such as accumulation and correction can stabilize training. This suggests that &#34;collapse&#34; should be measured as a joint failure of diversity retention and held-out quality, and that any minimum viable population must be estimated conditional on the data-refresh regime rather than treated as a universal constant.
+
+## Hypothesis Decomposition
+- H1: In replacement-only recursive loops, ecosystems with fewer distinct producers show faster diversity collapse and worse held-out quality than ecosystems with more distinct producers.
+- H2: Population count alone is not sufficient; effective distinctness matters. Multiple near-identical agents behave like a smaller population.
+- H3: Under accumulation with even a modest human-data anchor, collapse is substantially delayed or avoided across the tested population sizes.
+- H4: A practical &#34;individual&#34; is an agent configuration whose between-agent behavioral distance exceeds within-agent stochastic variance on the same prompt set.
+
+Independent variables:
+- Population size: `P in {1, 2, 4}`
+- Distinctness regime: `homogeneous`, `role-diverse`
+- Data regime: `replacement`, `accumulation`
+- Generation index: `g in {0, 1, 2, 3}`
+
+Dependent variables:
+- Agent individuality score
+- Corpus diversity metrics
+- Descendant-model held-out perplexity
+- Descendant-model TruthfulQA performance
+
+## Proposed Methodology
+
+### Approach
+Use a frontier API model as the real synthetic-data producer and a small local causal LM as the trainable descendant. The API layer supplies authentic LLM behavior; the local descendant makes recursive retraining feasible within one session. This directly tests the user&#39;s scenario: LLMs produce text, then later models are trained on that text.
+
+### Experimental Steps
+1. Load bounded slices of `wikitext_103_raw`, `oasst1`, and `truthful_qa_generation`.
+   Rationale: combine human-written expository text, multi-turn conversational prompts, and a fixed held-out quality benchmark.
+2. Instantiate agent populations with shared base model but different system prompts and private memory exemplars.
+   Rationale: isolates effective individuality from raw model-family differences.
+3. Run an individuality assay on a shared prompt set and compute within-agent versus between-agent distances.
+   Rationale: defines who counts as a population member.
+4. Generate generation-0 synthetic corpora from the agents.
+   Rationale: seed the ecosystem with real API outputs rather than simulated text.
+5. Fine-tune a compact local LM for each condition and generation.
+   Rationale: creates literal descendant models trained on prior synthetic output.
+6. Use each descendant LM to generate the next-generation corpus under either replacement or accumulation.
+   Rationale: reproduces recursive self-consumption dynamics while keeping training tractable.
+7. Evaluate each descendant on held-out WikiText text and TruthfulQA prompts, and compute diversity metrics on generated corpora.
+   Rationale: collapse should degrade both coverage/diversity and external quality.
+8. Compare trajectories across population size, distinctness, and data regime.
+   Rationale: reveals whether a viable threshold exists and whether it disappears under accumulation.
+
+### Baselines
+- Real-data anchor only: descendant trained on human text slice without synthetic recursion.
+- `P=1`, homogeneous, replacement: strongest collapse baseline.
+- `P=1`, homogeneous, accumulation: minimal anti-collapse baseline.
+- `P=4`, role-diverse, replacement: population-size test.
+- `P=4`, role-diverse, accumulation: best practical anti-collapse condition in this study.
+
+### Evaluation Metrics
+- Individuality ratio: mean between-agent embedding distance divided by mean within-agent distance.
+- Lexical diversity: distinct-2, distinct-3, token entropy.
+- Cross-sample similarity: self-BLEU and mean cosine similarity between passage embeddings.
+- Held-out quality: perplexity on bounded human-written WikiText validation slice.
+- Benchmark quality: TruthfulQA judged by exact-match overlap against reference answers plus LLM-judge scoring where needed.
+- Collapse score: normalized composite of diversity loss and held-out-quality degradation.
+
+### Statistical Analysis Plan
+- Use paired bootstrap confidence intervals for condition differences over prompts and generated samples.
+- Use Spearman correlation between individuality ratio and collapse severity.
+- Use two-way ANOVA style linear modeling on `population_size`, `distinctness`, and `data_regime` for final-generation collapse scores.
+- Report 95% confidence intervals and standardized effect sizes where applicable.
+- Treat findings as exploratory but precommitted to the metrics above to avoid post-hoc selection.
+
+## Expected Outcomes
+Support for the hypothesis would look like:
+- replacement loops collapsing quickly at `P=1`,
+- slower collapse at larger `P`,
+- weak benefit from larger `P` when agents are behaviorally near-identical,
+- much smaller or absent threshold effects under accumulation.
+
+Evidence against the hypothesis would be:
+- no monotonic relationship between effective population and collapse,
+- collapse equally severe across all `P`,
+- or accumulation failing to materially change outcomes.
+
+## Timeline and Milestones
+1. Planning and resource review: complete first.
+2. Environment and dependency setup: immediate next step.
+3. Data loading and validation: build bounded slices and prompt sets.
+4. Implementation: generation harness, individuality assay, fine-tuning pipeline, evaluation scripts.
+5. Experiments: run all population and regime conditions.
+6. Analysis and documentation: produce figures, tables, `REPORT.md`, and reproduction notes.
+
+## Potential Challenges
+- API variance and rate limits: mitigate with caching and bounded prompt counts.
+- Small-model underfitting: use relative comparisons across matched conditions rather than absolute quality claims.
+- TruthfulQA grading noise: combine exact lexical heuristics with manual spot checks and optional LLM-judge scoring.
+- Confounding prompt diversity with population size: measure individuality directly and report it, rather than assuming prompt roles create real individuals.
+
+## Success Criteria
+- A reproducible pipeline exists from human seed data to recursive descendant training.
+- At least one clear collapse trajectory is observed under replacement.
+- At least one anti-collapse trajectory is observed under accumulation or higher effective diversity.
+- The report gives a concrete operational answer to:
+  - whether a minimum viable population appears in this setup,
+  - whether collapse is inevitable,
+  - and what counts as &#34;different enough&#34; to be an individual.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review: How Many Agents to Avoid Collapse?
+
+## Review Scope
+
+### Research Question
+Is there a minimum viable population of sufficiently distinct LLM agents below which an information ecosystem collapses because recursive synthetic data loops overwhelm diversity?
+
+### Inclusion Criteria
+- Directly studies model collapse, self-consuming loops, or recursive synthetic-data training.
+- Operationalizes diversity, population diversity, role diversity, or individuality in multi-agent systems.
+- Provides code, datasets, or evaluation recipes useful for automated experiments.
+
+### Exclusion Criteria
+- Purely application papers without reusable methodology for collapse or diversity.
+- Agent papers focused only on task completion with no relevance to identity, population, or feedback loops.
+
+### Time Frame
+- Core focus: 2021-2024, with emphasis on 2023-2024 collapse papers.
+
+### Sources
+- Local paper downloads from arXiv.
+- Repository READMEs from cloned GitHub codebases.
+- Targeted manual search after the local paper-finder service stalled.
+
+## Search Log
+
+| Date | Query | Source | Notes |
+|---|---|---|---|
+| 2026-04-28 | model collapse, self-consuming training, LLM diversity | arXiv/manual | Used because local paper-finder call did not return |
+| 2026-04-28 | multi-agent population diversity | arXiv/manual | Added analog evidence from MARL |
+| 2026-04-28 | LLM societies, generative agents, role playing | arXiv/manual | Added individuality and ecosystem papers |
+
+## Key Papers
+
+### The Curse of Recursion: Training on Generated Data Makes Models Forget
+- **Authors**: Shumailov et al.
+- **Year**: 2023
+- **Source**: arXiv `2305.17493`
+- **Key Contribution**: Introduces model collapse as a general degenerative process under recursive training on generated data.
+- **Methodology**: Theory plus experiments on Gaussians, GMMs, VAEs, and OPT-125m trained recursively.
+- **Datasets Used**: WikiText-2 for language-model evaluation; synthetic Gaussian and image-generation setups elsewhere.
+- **Baselines**: no-preservation, partial-real-data preservation, accumulating mixtures.
+- **Results**: Replacing real data with generated data causes tail loss and distribution drift; preserving some real data slows but does not eliminate degradation in the studied settings.
+- **Code Available**: public code exists externally, but not cloned here.
+- **Relevance to Our Research**: Establishes why diversity collapses first and motivates population/ecosystem-level safeguards.
+
+### Self-Consuming Generative Models Go MAD
+- **Authors**: Alemohammad et al.
+- **Year**: 2023
+- **Source**: arXiv `2307.01850`
+- **Key Contribution**: Defines Model Autophagy Disorder and compares recursive training regimes.
+- **Methodology**: Analytical and empirical generate-train loops for image models under different real-data refresh strategies.
+- **Datasets Used**: Image-generation benchmarks such as MNIST and FFHQ-style settings.
+- **Baselines**: fixed-real-data access, fresh-real-data access, synthetic-only loops.
+- **Results**: Without enough fresh real data, future generations lose precision or recall progressively.
+- **Code Available**: not gathered locally.
+- **Relevance to Our Research**: Supports the claim that collapse depends on refresh rate and diversity injection, not only on recursive training itself.
+
+### Large Language Models Suffer From Their Own Output: An Analysis of the Self-Consuming Training Loop
+- **Authors**: Briesch et al.
+- **Year**: 2023
+- **Source**: arXiv `2311.16822`
+- **Key Contribution**: First direct LLM study of self-consuming loops.
+- **Methodology**: Trains language models on logic-expression data where correctness can be verified exactly; compares four data cycles.
+- **Datasets Used**: Synthetic logic-expression corpus with exact correctness labels.
+- **Baselines**: full synthetic, balanced, incremental, expanding data cycles.
+- **Evaluation Metrics**: correctness and pairwise normalized Levenshtein diversity.
+- **Results**: Correctness remains comparatively stable; diversity collapses much earlier. Full-synthetic loops collapse to a single point by generation 39, and even fresh data only slows the decline.
+- **Code Available**: none gathered locally.
+- **Relevance to Our Research**: Strongest evidence that ecosystem collapse should be defined in terms of diversity loss before raw task accuracy fails.
+
+### Self-Correcting Self-Consuming Loops for Generative Model Training
+- **Authors**: Gillman et al.
+- **Year**: 2024
+- **Source**: arXiv `2402.07087`
+- **Key Contribution**: Shows recursive training can be stabilized if synthetic outputs are corrected toward the true distribution.
+- **Methodology**: Theoretical correction operator plus experiments on MNIST and text-conditioned human motion diffusion.
+- **Datasets Used**: MNIST; HumanML3D built from AMASS; BMLMoVi for filtering; motion prompts.
+- **Baselines**: iterative fine-tuning without correction, iterative fine-tuning with correction, baseline training.
+- **Evaluation Metrics**: FID-like measures, motion quality, physical plausibility.
+- **Results**: Self-correction consistently outperforms uncorrected iterative fine-tuning and can stay competitive even at high synthetic-data ratios.
+- **Code Available**: yes, cloned in `code/self-correcting-self-consuming/`.
+- **Relevance to Our Research**: Suggests collapse is not inevitable if “individuality-preserving” or “reality-correcting” mechanisms exist.
+
+### Is Model Collapse Inevitable? Breaking the Curse of Recursion by Accumulating Real and Synthetic Data
+- **Authors**: Gerstgrasser et al.
+- **Year**: 2024
+- **Source**: arXiv `2404.01413`
+- **Key Contribution**: Provides a direct counterexample to inevitability by changing replacement to accumulation.
+- **Methodology**: Pretrains small GPT-2/Llama-2 variants on TinyStories; compares data replacement vs data accumulation; proves bounded error in a linear model.
+- **Datasets Used**: TinyStories; additional VAE and molecule-generation settings.
+- **Baselines**: replacement vs accumulation across model sizes, temperatures, and hyperparameters.
+- **Evaluation Metrics**: validation cross-entropy and test error.
+- **Results**: Replacement drives collapse; accumulation keeps cross-entropy stable or improved across iterations, with theoretical bounded error.
+- **Code Available**: not cloned, but methods are simple to reproduce.
+- **Relevance to Our Research**: Critical for the hypothesis because it means the threshold may depend on data governance, not only on population count.
+
+### Quantifying the Effects of Environment and Population Diversity in Multi-Agent Reinforcement Learning
+- **Authors**: McKee et al.
+- **Year**: 2021
+- **Source**: arXiv `2102.08370`
+- **Key Contribution**: Quantifies how co-player and environment diversity affect generalization in populations of agents.
+- **Methodology**: MARL experiments with procedural environments, varying population size, and an explicit behavioral-diversity measure.
+- **Results**: Larger and more diverse co-player populations can improve held-out generalization, though not uniformly.
+- **Relevance to Our Research**: Best operational precedent for defining a minimum viable population and measuring behavioral individuality.
+
+### CAMEL / Generative Agents / RoleLLM / Agent Surveys
+- **Common contribution**: These papers do not study collapse directly, but they provide the mechanisms needed to define individuality in LLM ecosystems.
+- **Methodology**:
+  - CAMEL uses role-playing communicative agents and large-scale societies.
+  - Generative Agents use memory, reflection, and planning to create persistent identities.
+  - RoleLLM benchmarks role consistency and persona enactment.
+  - Agent surveys catalog agent architectures and evaluation strategies.
+- **Relevance to Our Research**: They provide practical ways to instantiate “distinct LLMs” beyond model weights alone: different memories, roles, prompts, tools, and training mixtures may all count as population members.
+
+## Common Methodologies
+
+- Recursive generate-train loops: used in `2305.17493`, `2307.01850`, `2311.16822`, `2402.07087`, `2404.01413`.
+- Replacement vs accumulation regimes: central comparison in `2305.17493` and `2404.01413`.
+- Diversity-first diagnostics: explicit in `2311.16822`; implicit in `2305.17493` and `2307.01850`.
+- Controlled synthetic tasks with exact labels: used in `2311.16822`.
+- Population-diversity measurement: used in `2102.08370`.
+- Agent-society simulation: used in `2303.17760` and `2304.03442`.
+
+## Standard Baselines
+
+- Real-only training.
+- Synthetic-only replacement loop.
+- Mixed real/synthetic loop with fixed ratio.
+- Accumulating real-plus-synthetic loop.
+- Fresh-data injection / expanding-data loop.
+- Self-corrected synthetic loop.
+- Small vs large population of interacting agents.
+
+## Evaluation Metrics
+
+- **Perplexity / cross-entropy**: standard quality metric in `2305.17493` and `2404.01413`.
+- **Levenshtein diversity**: direct diversity metric in `2311.16822`.
+- **FID-style quality metrics**: used in image and motion settings such as `2307.01850` and `2402.07087`.
+- **Held-out generalization against unseen co-players**: used in `2102.08370`.
+- **Role consistency / persona fidelity**: natural individuality metric suggested by `2310.00746`.
+
+## Datasets in the Literature
+
+- **WikiText-2 / WikiText**: language modeling under recursive retraining.
+- **TinyStories**: efficient language-model pretraining corpus for accumulation-vs-replacement tests.
+- **Synthetic logic expressions**: exact-correctness LLM collapse testbed.
+- **MNIST / FFHQ-like image datasets**: recursive image-generation loops.
+- **HumanML3D / AMASS / BMLMoVi**: motion-generation self-correction experiments.
+
+## Gaps and Opportunities
+
+- No paper in this set directly identifies a population threshold for LLM societies.
+- Collapse is usually measured for a single recursively retrained model, not an interacting population of distinct models.
+- “Individuality” is underspecified. Existing work suggests at least four measurable components:
+  - output diversity
+  - role consistency
+  - memory/history divergence
+  - behavioral diversity under shared tasks
+- The strongest anti-collapse evidence changes the data regime, not the number of agents. That means population threshold experiments must control for replacement vs accumulation and fresh-data access.
+
+## Recommendations for Our Experiment
+
+- **Recommended datasets**:
+  - `datasets/wikitext_103_raw` as the main human-origin text pool.
+  - `datasets/oasst1` for multi-turn interaction experiments.
+  - `datasets/truthful_qa_generation` as a fixed held-out quality benchmark.
+  - `datasets/tinystories_validation_5k` only as a lightweight reproduction check for `2404.01413`.
+- **Recommended baselines**:
+  - single-model replacement loop
+  - single-model accumulation loop
+  - multi-agent loop with shared synthetic pool
+  - multi-agent loop with partitioned agent-specific memories
+  - self-corrected or fresh-data-injected loop
+- **Recommended metrics**:
+  - held-out cross-entropy or perplexity
+  - lexical diversity and self-BLEU style collapse indicators
+  - embedding-based pairwise diversity across agents
+  - role consistency / identity persistence across turns
+  - performance on TruthfulQA or lm-eval tasks
+- **Methodological considerations**:
+  - Define population size as the number of distinct synthetic data producers, not just chat sessions.
+  - Vary distinctness separately from count: same base model with different roles or memories may still increase effective diversity.
+  - Treat replacement vs accumulation as a first-order experimental factor, otherwise threshold claims will be confounded.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete academic paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey main finding or contribution
+
+2. AUTHOR
+   - Use this exact author line in the \author{} block: Ari Holtzman and NeuriCo
+
+3. ABSTRACT (150-250 words)
+   - Problem statement
+   - Approach
+   - Key results
+   - Significance
+
+4. INTRODUCTION
+   - Research problem and motivation
+   - Gap in existing work
+   - Our contribution (be specific)
+   - Paper organization
+
+5. RELATED WORK
+   - Organized by theme/approach
+   - Position our work relative to prior work
+   - Cite papers from literature review
+
+6. METHODOLOGY
+   - Clear description of approach
+   - Experimental setup
+   - Datasets used
+   - Evaluation metrics
+   - Baselines
+
+7. RESULTS
+   - Present results with tables and figures
+   - Statistical analysis
+   - Comparison to baselines
+   - Ablation studies (if applicable)
+
+8. DISCUSSION
+   - Interpretation of results
+   - Limitations
+   - Broader implications
+
+9. CONCLUSION
+   - Summary of contributions
+   - Key findings
+   - Future work
+
+10. REFERENCES
+   - BibTeX format
+   - All cited papers
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── related_work.tex  # Related work section
+│   ├── methodology.tex   # Methodology section
+│   ├── results.tex       # Results section
+│   ├── discussion.tex    # Discussion section
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+├── tables/               # Directory for complex standalone tables
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/tables paper_draft/appendix)
+2. Write main.tex using the EXACT preamble for NEURIPS:
+
+   \documentclass{article}
+   \usepackage[final]{neurips_2025}  % NEURIPS style (neurips_2025.sty is in paper_draft/)
+   \usepackage[hidelinks]{hyperref}  % REQUIRED: clickable links
+   \usepackage{booktabs}  % REQUIRED: professional tables
+   \usepackage{graphicx}
+   \usepackage{amsmath,amssymb}
+
+   % Import command files
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+   % Use this bibliography style:
+   \bibliographystyle{plainnat}
+
+   \author{Ari Holtzman and NeuriCo}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic tone throughout
+- All claims must be supported by data from the experiment report
+- Proper citations using \cite{} commands
+- Clear figures and tables with proper captions
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                          LAB WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these lab-specific conventions to match our paper style:
+
+1. LANGUAGE STYLE:
+   - Use active voice: "We propose", "We examine", "We focus on"
+   - Be direct and confident: "Our main question is...", "We hypothesize that..."
+   - State things clearly and simply - prefer plain language over jargon
+   - Use bold questions as paragraph organizers: {\bf what is X?}
+   - Include specific quantitative claims: "8.97% over baseline"
+   - Avoid fancy wording: "utilize" → "use", "facilitate" → "help"
+
+2. INTRODUCTION STRUCTURE:
+   - Engaging hook (get to the point quickly)
+   - Problem importance
+   - Gap identification
+   - Your approach with method figure reference
+   - Quantitative preview of results
+   - Contribution bullets (3-4 items, action verbs)
+
+3. CONTRIBUTION LISTS:
+   \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+       \item We propose...
+       \item We conduct...
+       \item We complement...
+   \end{itemize}
+
+4. MODULAR COMMANDS STRUCTURE:
+   Command templates are pre-copied to paper_draft/commands/:
+   - math.tex: Math notation macros
+   - general.tex: Formatting macros
+   - macros.tex: Project-specific term definitions (customize this for your paper)
+
+   In main.tex, include:
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+5. REFERENCE CONVENTIONS:
+   Use reference macros from math.tex:
+   - \figref{fig:name} for "figure 1" (lowercase, in-sentence)
+   - \Figref{fig:name} for "Figure 1" (capitalized, start of sentence)
+   - \secref{sec:name} for "section 2"
+
+6. TEXT FORMATTING:
+   - Use \para{Header text} for bold paragraph headers
+   - Define method/dataset names with \textsc and \xspace:
+     \newcommand{\methodname}{\textsc{MethodName}\xspace}
+
+7. TABLE FORMATTING:
+   - Use booktabs package (no vertical lines)
+   - Use \resizebox{\textwidth}{!}{...} for wide tables
+   - Use @{} to remove padding at table edges
+   - Use \cmidrule(lr){x-y} for sub-headers
+   - Use \textsc{} for dataset/method names in headers
+   - Bold best results with {\bf ...}
+
+8. FIGURE FORMATTING:
+   - Use 0.32\textwidth for 3-column subfigures
+   - Use 0.95\linewidth for full-width figures
+   - Use \input{figures/legend} for shared legends
+   - Write self-contained captions explaining key observations
+
+9. RESULTS PRESENTATION:
+   - Define \increase and \decrease for colored arrows (green up, red down)
+   - Bold best results in tables
+   - Report confidence intervals when available
+
+10. ALGORITHM STYLING:
+    - Use algpseudocode with [noend]
+    - Use \triangleright for comments
+
+11. HYPERLINKS (REQUIRED):
+    - Always use \usepackage[hidelinks]{hyperref} or with colored links
+    - All citations, section refs, figure refs, table refs must be clickable
+    - This is essential for reader navigation
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read .codex/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Browse paper_examples/ for formatting and language patterns
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   LANGUAGE CHECK:
+   - [ ] Is the writing clear and jargon-free?
+   - [ ] Are claims specific with quantitative support?
+   - [ ] Is active voice used throughout?
+
+   FORMATTING CHECK:
+   - [ ] Does main.tex include \input{commands/math}, \input{commands/general}, \input{commands/macros}?
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Do tables use booktabs (no vertical lines)?
+   - [ ] Are best results bolded in tables?
+   - [ ] Are figures/tables properly captioned?
+
+   STRUCTURE CHECK:
+   - [ ] Does introduction follow: hook → importance → gap → approach → preview → contributions?
+   - [ ] Are contribution bullets specific with action verbs?
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.

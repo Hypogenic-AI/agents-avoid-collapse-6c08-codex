@@ -1,0 +1,6 @@
+{
+  "spearman_individuality_vs_collapse": 0.8280786712108251,
+  "spearman_pvalue": 0.041794680456045265,
+  "best_final_condition": "p1_homogeneous_accumulation",
+  "worst_final_condition": "p4_role_diverse_accumulation"
+}
